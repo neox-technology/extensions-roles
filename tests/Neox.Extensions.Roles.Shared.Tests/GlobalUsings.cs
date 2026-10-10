@@ -1,0 +1,1 @@
+global using Neox.Extensions.Roles.Shared;

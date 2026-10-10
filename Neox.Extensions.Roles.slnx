@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/aspire/" />
+  <Folder Name="/src/aspire/hosting/">
+    <Project Path="src/aspire/hosting/Neox.Extensions.Roles.Aspire.Hosting.Azure.EntraId/Neox.Extensions.Roles.Aspire.Hosting.Azure.EntraId.csproj" />
+    <Project Path="src/aspire/hosting/Neox.Extensions.Roles.Aspire.Hosting.Keycloak/Neox.Extensions.Roles.Aspire.Hosting.Keycloak.csproj" />
+  </Folder>
+  <Folder Name="/src/aspnetcore/">
+    <Project Path="src/aspnetcore/Neox.Extensions.Roles.AspNetCore/Neox.Extensions.Roles.AspNetCore.csproj" />
+  </Folder>
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/Neox.Extensions.Roles.Shared/Neox.Extensions.Roles.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Neox.Extensions.Roles.Shared.Tests/Neox.Extensions.Roles.Shared.Tests.csproj" />
+  </Folder>
+</Solution>
