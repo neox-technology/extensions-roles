@@ -2,7 +2,7 @@ name: publish-preview-version
 
 # Preview channel. Branch release/x.x.x-preview.x only.
 # Arcade build/test/pack with a daily package identity, then push Shipping to GitHub Packages.
-# After a successful publish, squash into develop and delete the release branch.
+# After a successful publish, squash into develop, tag the prerelease, and delete the release branch.
 
 on:
   workflow_dispatch:
@@ -167,7 +167,7 @@ jobs:
   finalize-git:
     needs: publish
     runs-on: ubuntu-latest
-    name: Squash to develop and close branch
+    name: Squash to develop, tag, and close branch
     permissions:
       contents: write
     steps:
@@ -231,6 +231,39 @@ jobs:
           else
             git commit -m "chore: sync release $VERSION into develop"
             git push origin develop
+          fi
+
+      - name: Create tag
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          git fetch origin develop --tags --force
+          git checkout develop
+          git pull origin develop
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists"
+            exit 1
+          fi
+
+          git config user.name "neox-gitflow[bot]"
+          git config user.email "neox-gitflow[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists"
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes --prerelease
           fi
 
       - name: Close release branch
