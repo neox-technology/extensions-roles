@@ -1,0 +1,164 @@
+name: publish-preview-version
+
+# Preview channel. Branch release/x.x.x-preview.x only.
+# Arcade build/test/pack with a daily package identity, then push Shipping to GitHub Packages.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: publish-preview-version-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Publish preview
+    environment: staging
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Release guard
+        id: version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          CHANNEL: preview
+        run: |
+          set -euo pipefail
+          RAW="${REF_NAME#release/}"
+          RAW="${RAW#v}"
+          case "$CHANNEL" in
+            preview)
+              [[ "$RAW" =~ ^[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$ ]] || {
+                echo "::error::Branch '$REF_NAME' must be release/x.x.x-preview.x"
+                exit 1
+              }
+              ;;
+            final)
+              [[ "$RAW" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+                echo "::error::Branch '$REF_NAME' must be release/x.x.x"
+                exit 1
+              }
+              ;;
+            *)
+              echo "::error::CHANNEL must be preview or final"
+              exit 1
+              ;;
+          esac
+          echo "version=$RAW" >> "$GITHUB_OUTPUT"
+
+      - name: Variables and secrets guard
+        env:
+          NUGET_USER: ${{ secrets.NUGET_USER }}
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+          GUARD_ENTRIES: |
+            Secret|projet|NUGET_USER|.+
+            Secret|projet|NUGET_TOKEN|.+
+        run: |
+          set -euo pipefail
+          failed=0
+          while IFS='|' read -r KIND SCOPE NAME PATTERN; do
+            [ -z "${KIND:-}" ] && continue
+            VALUE="${!NAME:-}"
+            if [ -z "$PATTERN" ]; then
+              PATTERN='.+'
+            fi
+            if [ -z "$VALUE" ]; then
+              echo "::error::${KIND} from ${SCOPE} not provided."
+              failed=1
+              continue
+            fi
+            if ! [[ "$VALUE" =~ $PATTERN ]]; then
+              echo "::error::${KIND} from ${SCOPE} malformated."
+              failed=1
+            fi
+          done <<< "$GUARD_ENTRIES"
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.111"
+
+      - name: Authenticate NuGet feed
+        env:
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        run: |
+          set -euo pipefail
+          dotnet nuget update source github-neox \
+            --username "neox-technology" \
+            --password "$NUGET_TOKEN" \
+            --store-password-in-clear-text \
+            --configfile NuGet.config
+
+      - name: Compute OfficialBuildId
+        id: buildid
+        run: |
+          set -euo pipefail
+          echo "official_build_id=$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Build test and pack
+        env:
+          NUGET_USER: ${{ secrets.NUGET_USER }}
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./eng/common/build.sh --ci --restore --build --test --pack \
+            --configuration Release \
+            /p:Sign=false \
+            /p:OfficialBuildId="${{ steps.buildid.outputs.official_build_id }}" \
+            /p:StabilizePackageVersion=false \
+            /p:PreReleaseVersionLabel=daily
+
+      - name: Upload Shipping packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shipping-${{ steps.version.outputs.version }}-${{ github.run_number }}
+          path: artifacts/packages/Release/Shipping/
+          if-no-files-found: error
+
+      - name: Variables and secrets guard
+        env:
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+          GUARD_ENTRIES: |
+            Secret|projet|NUGET_TOKEN|.+
+        run: |
+          set -euo pipefail
+          failed=0
+          while IFS='|' read -r KIND SCOPE NAME PATTERN; do
+            [ -z "${KIND:-}" ] && continue
+            VALUE="${!NAME:-}"
+            if [ -z "$PATTERN" ]; then
+              PATTERN='.+'
+            fi
+            if [ -z "$VALUE" ]; then
+              echo "::error::${KIND} from ${SCOPE} not provided."
+              failed=1
+              continue
+            fi
+            if ! [[ "$VALUE" =~ $PATTERN ]]; then
+              echo "::error::${KIND} from ${SCOPE} malformated."
+              failed=1
+            fi
+          done <<< "$GUARD_ENTRIES"
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Push to GitHub Packages
+        env:
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        run: |
+          set -euo pipefail
+          source="https://nuget.pkg.github.com/neox-technology/index.json"
+          dotnet nuget push artifacts/packages/Release/Shipping/*.nupkg --source "$source" --api-key "$NUGET_TOKEN" --skip-duplicate
+          dotnet nuget push artifacts/packages/Release/Shipping/*.snupkg --source "$source" --api-key "$NUGET_TOKEN" --skip-duplicate

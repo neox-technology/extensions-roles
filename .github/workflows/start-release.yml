@@ -1,4 +1,4 @@
-name: release-start
+name: start-release
 
 # Manual cut of a release/* branch from develop.
 # Select major/minor/patch/none + optional preview; next version is computed from the latest v* tag.
@@ -24,7 +24,7 @@ on:
         default: false
 
 concurrency:
-  group: release-start-${{ github.ref }}
+  group: start-release-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Create GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.NEOX_GITFLOW_APP_ID }}
           private-key: ${{ secrets.NEOX_GITFLOW_APP_PRIVATE_KEY }}
@@ -63,14 +63,12 @@ jobs:
           LATEST=$(git tag -l 'v*' --sort=-v:refname | head -n1 || true)
           if [ -z "$LATEST" ]; then
             BASE="0.0.0"
-            echo "No v* tags found — base $BASE"
           else
             BASE="${LATEST#v}"
             if ! [[ "$BASE" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-preview\.([0-9]+))?$ ]]; then
               echo "::error::Latest tag '$LATEST' must be vX.Y.Z or vX.Y.Z-preview.N"
               exit 1
             fi
-            echo "Latest tag: $LATEST (base $BASE)"
           fi
 
           MAJOR=$(echo "$BASE" | cut -d. -f1)
@@ -116,30 +114,28 @@ jobs:
             VERSION="${CORE}-preview.${NEXT_PREVIEW}"
             STABILIZE="false"
           else
-            # none without preview promotes: strip -preview.N (core already stripped above)
             VERSION="$CORE"
             STABILIZE="true"
           fi
 
           BRANCH="release/${VERSION}"
-          echo "Bump $BUMP preview=$PREVIEW → $VERSION (branch $BRANCH, VersionPrefix=$CORE, Stabilize=$STABILIZE)"
 
           if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
             echo "::error::Branch $BRANCH already exists on origin"
             exit 1
           fi
 
+          echo "Bump $BUMP preview=$PREVIEW → $VERSION (branch $BRANCH, VersionPrefix=$CORE, Stabilize=$STABILIZE)"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
           echo "CORE=$CORE" >> "$GITHUB_ENV"
           echo "STABILIZE=$STABILIZE" >> "$GITHUB_ENV"
 
-      - name: Create and push release branch
+      - name: Push release branch
         run: |
           set -euo pipefail
           git config user.name "neox-gitflow[bot]"
           git config user.email "neox-gitflow[bot]@users.noreply.github.com"
-
           git checkout -b "$BRANCH"
 
           PROPS="eng/Versions.props"
@@ -163,4 +159,4 @@ jobs:
           fi
 
           git push -u origin "$BRANCH"
-          echo "Pushed $BRANCH — validate with release-private-publish, then finish with release-finalize."
+          echo "Pushed $BRANCH — preview with publish-preview-version, final with publish-final-version."
