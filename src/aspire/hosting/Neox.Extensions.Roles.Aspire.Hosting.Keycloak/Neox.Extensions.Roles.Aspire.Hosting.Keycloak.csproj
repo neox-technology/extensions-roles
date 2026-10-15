@@ -10,10 +10,12 @@
 
   <ItemGroup>
     <PackageReference Include="Neox.Aspire.Hosting.Keycloak" Version="1.0.1-daily.26509.11" />
+    <PackageReference Include="Neox.Keycloak.Provisioning.Realm" Version="1.0.1-daily.26509.11" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\Neox.Extensions.Roles.Shared\Neox.Extensions.Roles.Shared.csproj" />
+    <ProjectReference Include="..\..\provisioning\Neox.Extensions.Roles.Aspire.Provisioning.Keycloak\Neox.Extensions.Roles.Aspire.Provisioning.Keycloak.csproj" />
   </ItemGroup>
 
 </Project>

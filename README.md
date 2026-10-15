@@ -1,6 +1,6 @@
 # Neox.Extensions.Roles
 
-Bibliothèque pour définir des rôles, les contrôler dans ASP.NET Core et les héberger avec Aspire, avec un package web.
+Bibliothèque pour définir des rôles, les contrôler dans ASP.NET Core et les héberger avec Aspire, avec un package de guards Vite.
 
 ## Installation
 
@@ -13,7 +13,7 @@ dotnet build Neox.Extensions.Roles.slnx
 
 ## Utilisation
 
-Référencer `Neox.Extensions.Roles.Shared` pour le modèle, `Neox.Extensions.Roles.AspNetCore` pour l'autorisation, `Neox.Extensions.Roles.Aspire.Hosting.Azure.EntraId` pour déclarer les rôles d'une collection sur une inscription Entra, et `Neox.Extensions.Roles.Aspire.Hosting.Keycloak` pour les déclarer sur un client Keycloak. Le package web est `@neox/extensions-roles`.
+Référencer `Neox.Extensions.Roles.Shared` pour le modèle, `Neox.Extensions.Roles.Aspire.Provisioning.Keycloak` pour les rôles client built-in `realm-management` de Keycloak 26.7, `Neox.Extensions.Roles.AspNetCore` pour l'autorisation, `Neox.Extensions.Roles.Aspire.Hosting.Azure.EntraId` pour déclarer les rôles d'une collection sur une inscription Entra, et `Neox.Extensions.Roles.Aspire.Hosting.Keycloak` pour les déclarer sur un client Keycloak. Le package de guards Vite est `@neox/extensions-roles`. La mécanique TypeScript est `@neox/extensions-roles.shared`.
 
 ```csharp
 registration.WithRoles<Billing>();
