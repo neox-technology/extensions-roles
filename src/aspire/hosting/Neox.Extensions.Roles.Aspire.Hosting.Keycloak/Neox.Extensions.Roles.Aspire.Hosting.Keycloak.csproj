@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Neox.Aspire.Hosting.Keycloak" Version="1.0.1-daily.26509.11" />
-    <PackageReference Include="Neox.Keycloak.Provisioning.Realm" Version="1.0.1-daily.26509.11" />
+    <PackageReference Include="Neox.Aspire.Hosting.Keycloak" Version="1.1.0-daily.26515.3" />
+    <PackageReference Include="Neox.Keycloak.Provisioning.Realm" Version="1.1.0-daily.26515.3" />
   </ItemGroup>
 
   <ItemGroup>

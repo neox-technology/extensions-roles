@@ -14,6 +14,58 @@ namespace Neox.Aspire.Hosting.Keycloak;
 public static class KeycloakRoleCollectionExtensions {
 
     /// <summary>
+    /// Adds the Keycloak <c>roles</c> client scope so realm roles appear on access tokens.
+    /// </summary>
+    public static IResourceBuilder<KeycloakRealmResource> EnsureRealmRoleScope(
+        this IResourceBuilder<KeycloakRealmResource> builder) {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        KeycloakHostingExtensions.MutateRealmJson(builder.Resource, representation => {
+            representation.ClientScopes ??= [];
+
+            var scope = representation.ClientScopes.GetOrAdd(
+                existing => existing.Name == "roles",
+                new ClientScopeRepresentation {
+                    Name = "roles",
+                    Description = "OpenID Connect role claims.",
+                    Protocol = "openid-connect",
+                    Attributes = new ConcurrentDictionary<string, string>(StringComparer.Ordinal) {
+                        ["include.in.token.scope"] = "false",
+                        ["display.on.consent.screen"] = "true",
+                    },
+                });
+
+            scope.ProtocolMappers ??= [];
+            scope.ProtocolMappers.GetOrAdd(
+                mapper => mapper.Name == "realm roles",
+                new ProtocolMapperRepresentation {
+                    Name = "realm roles",
+                    Protocol = "openid-connect",
+                    ProtocolMapper = "oidc-usermodel-realm-role-mapper",
+                    Config = new ConcurrentDictionary<string, string>(StringComparer.Ordinal) {
+                        ["multivalued"] = "true",
+                        ["user.attribute"] = "foo",
+                        ["access.token.claim"] = "true",
+                        ["id.token.claim"] = "true",
+                        ["claim.name"] = "realm_access.roles",
+                        ["jsonType.label"] = "String",
+                    },
+                });
+
+            if (representation.Clients is null) {
+                return;
+            }
+
+            foreach (var client in representation.Clients) {
+                client.DefaultClientScopes ??= [];
+                client.DefaultClientScopes.GetOrAdd(existing => existing == "roles", "roles");
+            }
+        });
+
+        return builder;
+    }
+
+    /// <summary>
     /// Upserts realm roles for <typeparamref name="TCollection"/> on the parent realm.
     /// </summary>
     public static IResourceBuilder<KeycloakJwtClientResource> WithRoles<TCollection>(
@@ -46,6 +98,9 @@ public static class KeycloakRoleCollectionExtensions {
         var catalog = RoleCatalog.All(typeof(TCollection).Assembly)
             .ToDictionary(role => role.Name, StringComparer.Ordinal);
         var realmBuilder = application.CreateResourceBuilder(realm);
+
+        realmBuilder.EnsureRealmRoleScope();
+
         var visited = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var composition in RoleCatalog.Under<TCollection>()) {
