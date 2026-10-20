@@ -2,6 +2,7 @@ name: publish-preview-version
 
 # Preview channel. Branch release/x.x.x-preview.x only.
 # Arcade build/test/pack with a daily package identity, then push Shipping to GitHub Packages.
+# After a successful publish, squash into develop, tag the prerelease, and delete the release branch.
 
 on:
   workflow_dispatch:
@@ -162,3 +163,119 @@ jobs:
           source="https://nuget.pkg.github.com/neox-technology/index.json"
           dotnet nuget push artifacts/packages/Release/Shipping/*.nupkg --source "$source" --api-key "$NUGET_TOKEN" --skip-duplicate
           dotnet nuget push artifacts/packages/Release/Shipping/*.snupkg --source "$source" --api-key "$NUGET_TOKEN" --skip-duplicate
+
+  finalize-git:
+    needs: publish
+    runs-on: ubuntu-latest
+    name: Squash to develop, tag, and close branch
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.NEOX_GITFLOW_APP_ID }}
+          private-key: ${{ secrets.NEOX_GITFLOW_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Release guard
+        id: version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          CHANNEL: preview
+        run: |
+          set -euo pipefail
+          RAW="${REF_NAME#release/}"
+          RAW="${RAW#v}"
+          case "$CHANNEL" in
+            preview)
+              [[ "$RAW" =~ ^[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$ ]] || {
+                echo "::error::Branch '$REF_NAME' must be release/x.x.x-preview.x"
+                exit 1
+              }
+              ;;
+            final)
+              [[ "$RAW" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+                echo "::error::Branch '$REF_NAME' must be release/x.x.x"
+                exit 1
+              }
+              ;;
+            *)
+              echo "::error::CHANNEL must be preview or final"
+              exit 1
+              ;;
+          esac
+          echo "version=$RAW" >> "$GITHUB_OUTPUT"
+
+      - name: Squash-merge into develop
+        env:
+          HEAD_REF: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "neox-gitflow[bot]"
+          git config user.email "neox-gitflow[bot]@users.noreply.github.com"
+
+          git fetch origin develop "$HEAD_REF"
+          git checkout -B develop origin/develop
+          git merge --squash "origin/$HEAD_REF"
+          if git diff --cached --quiet; then
+            echo "develop already contains $HEAD_REF — nothing to squash"
+          else
+            git commit -m "chore: sync release $VERSION into develop"
+            git push origin develop
+          fi
+
+      - name: Create tag
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v${VERSION}"
+          git fetch origin develop --tags --force
+          git checkout develop
+          git pull origin develop
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists"
+            exit 1
+          fi
+
+          git config user.name "neox-gitflow[bot]"
+          git config user.email "neox-gitflow[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists"
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes --prerelease
+          fi
+
+      - name: Close release branch
+        env:
+          HEAD_REF: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          case "$HEAD_REF" in
+            release/*) ;;
+            *)
+              echo "::error::Refusing to delete '$HEAD_REF'"
+              exit 1
+              ;;
+          esac
+          git push origin --delete "$HEAD_REF"

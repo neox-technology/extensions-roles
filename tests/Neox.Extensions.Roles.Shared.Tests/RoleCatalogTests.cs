@@ -3,6 +3,24 @@ namespace Neox.Extensions.Roles.Shared.Tests;
 public sealed class RoleCatalogTests {
 
     [Fact]
+    public void All_lists_public_roles() {
+        var roles = RoleCatalog.All(typeof(SampleRoles).Assembly);
+
+        Assert.Equal(
+            [
+                "Administrator",
+                "Billing.Admin",
+                "Billing.Admin.Super",
+                "Billing.Invoices.Reader",
+                "Billing.Reader",
+                "Billing.Writer",
+                "Security.Owner",
+                "Security.User",
+            ],
+            roles.Select(role => role.Name));
+    }
+
+    [Fact]
     public void FromAssemblies_lists_public_role_names() {
         Assert.Equal(
             [

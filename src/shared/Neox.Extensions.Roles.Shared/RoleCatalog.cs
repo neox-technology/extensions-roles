@@ -7,6 +7,17 @@ namespace Neox.Extensions.Roles.Shared;
 /// </summary>
 public static class RoleCatalog {
 
+    /// <summary>
+    /// Concrete roles in <paramref name="assemblies"/>.
+    /// </summary>
+    public static IReadOnlyList<IRole> All(params Assembly[] assemblies) {
+        ArgumentNullException.ThrowIfNull(assemblies);
+
+        return [.. Roles(assemblies)
+            .DistinctBy(role => role.Name)
+            .OrderBy(role => role.Name, StringComparer.Ordinal)];
+    }
+
     public static IReadOnlyList<string> FromAssemblies(params Assembly[] assemblies) {
         ArgumentNullException.ThrowIfNull(assemblies);
 

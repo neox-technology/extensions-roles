@@ -1,0 +1,11 @@
+{
+  "name": "@neox/extensions-roles",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

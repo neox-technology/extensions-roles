@@ -5,6 +5,9 @@
     <Project Path="src/aspire/hosting/Neox.Extensions.Roles.Aspire.Hosting.Azure.EntraId/Neox.Extensions.Roles.Aspire.Hosting.Azure.EntraId.csproj" />
     <Project Path="src/aspire/hosting/Neox.Extensions.Roles.Aspire.Hosting.Keycloak/Neox.Extensions.Roles.Aspire.Hosting.Keycloak.csproj" />
   </Folder>
+  <Folder Name="/src/aspire/provisioning/">
+    <Project Path="src/aspire/provisioning/Neox.Extensions.Roles.Aspire.Provisioning.Keycloak/Neox.Extensions.Roles.Aspire.Provisioning.Keycloak.csproj" />
+  </Folder>
   <Folder Name="/src/aspnetcore/">
     <Project Path="src/aspnetcore/Neox.Extensions.Roles.AspNetCore/Neox.Extensions.Roles.AspNetCore.csproj" />
   </Folder>

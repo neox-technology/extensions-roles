@@ -1,0 +1,5 @@
+export { ImplicitRoleRegistry } from "./implicit-role-registry.ts";
+export { Role } from "./role.ts";
+export { RoleBuilder } from "./role-builder.ts";
+export { RoleCollection } from "./role-collection.ts";
+export { RoleRoot } from "./role-root.ts";
