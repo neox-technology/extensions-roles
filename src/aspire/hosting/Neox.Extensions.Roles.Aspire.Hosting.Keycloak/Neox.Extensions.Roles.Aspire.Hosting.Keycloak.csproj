@@ -11,6 +11,8 @@
   <ItemGroup>
     <PackageReference Include="Neox.Aspire.Hosting.Keycloak" Version="1.1.0-daily.26515.3" />
     <PackageReference Include="Neox.Keycloak.Provisioning.Realm" Version="1.1.0-daily.26515.3" />
+    <!-- Transitive 2.5.302 trips NU1902 (GHSA-qhrr-8q5h-9q3h). -->
+    <PackageReference Include="MessagePack" Version="2.5.303" />
   </ItemGroup>
 
   <ItemGroup>

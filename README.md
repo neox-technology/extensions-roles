@@ -13,7 +13,7 @@ dotnet build Neox.Extensions.Roles.slnx
 
 ## Utilisation
 
-Référencer `Neox.Extensions.Roles.Shared` pour le modèle, `Neox.Extensions.Roles.Aspire.Provisioning.Keycloak` pour les rôles client built-in `realm-management` de Keycloak 26.7, `Neox.Extensions.Roles.AspNetCore` pour l'autorisation, `Neox.Extensions.Roles.Aspire.Hosting.Azure.EntraId` pour déclarer les rôles d'une collection sur une inscription Entra, et `Neox.Extensions.Roles.Aspire.Hosting.Keycloak` pour les déclarer sur un client Keycloak. Le package de guards Vite est `@neox/extensions-roles`. La mécanique TypeScript est `@neox/extensions-roles.shared`.
+Référencer `Neox.Extensions.Roles.Shared` pour le modèle, `Neox.Extensions.Roles.Aspire.Provisioning.Keycloak` pour les rôles client built-in `realm-management` de Keycloak 26.7, `Neox.Extensions.Roles.AspNetCore` pour l'autorisation, `Neox.Extensions.Roles.Aspire.Hosting.Azure.EntraId` pour déclarer les rôles d'une collection sur une inscription Entra, et `Neox.Extensions.Roles.Aspire.Hosting.Keycloak` pour les déclarer sur un client Keycloak. Le package de guards Vite est `@neox-technology/extensions-roles`. La mécanique TypeScript est `@neox-technology/extensions-roles.shared`.
 
 ```csharp
 registration.WithRoles<Billing>();

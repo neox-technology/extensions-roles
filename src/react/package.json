@@ -1,7 +1,11 @@
 {
-  "name": "@neox/extensions-roles",
+  "name": "@neox-technology/extensions-roles",
   "version": "1.0.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neox-technology/extensions-roles"
+  },
   "exports": {
     ".": "./src/index.ts"
   },

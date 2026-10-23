@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Neox.Aspire.Hosting.Azure.EntraId" Version="1.0.1-daily.26509.11" />
+    <!-- Transitive 2.5.302 trips NU1902 (GHSA-qhrr-8q5h-9q3h). -->
+    <PackageReference Include="MessagePack" Version="2.5.303" />
   </ItemGroup>
 
   <ItemGroup>
