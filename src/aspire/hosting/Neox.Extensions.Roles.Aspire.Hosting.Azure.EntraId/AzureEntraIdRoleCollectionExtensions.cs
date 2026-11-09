@@ -1,3 +1,4 @@
+using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Neox.Extensions.Roles.Shared;
 
@@ -9,10 +10,27 @@ namespace Neox.Aspire.Hosting.Azure;
 public static class AzureEntraIdRoleCollectionExtensions {
 
     /// <summary>
+    /// Requests the catalog app role <typeparamref name="TRole"/> as a Graph permission
+    /// on this app registration. The role value must be unique in the application model.
+    /// </summary>
+    public static IResourceBuilder<AzureEntraIdAppRegistrationResource> WithPermission<TRole>(
+        this IResourceBuilder<AzureEntraIdAppRegistrationResource> builder)
+        where TRole : IRole, new() {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        var roleName = new TRole().Name;
+        var role = builder.ApplicationBuilder.Resources
+            .OfType<AzureEntraIdAppRoleResource>()
+            .Single(candidate => string.Equals(candidate.Value, roleName, StringComparison.Ordinal));
+
+        return builder.WithPermission(builder.ApplicationBuilder.CreateResourceBuilder(role));
+    }
+
+    /// <summary>
     /// Adds one Graph app role per role under <typeparamref name="TCollection"/>,
     /// including dependent role names.
     /// </summary>
-    public static IResourceBuilder<AzureEntraIdAppRegistrationResource> WithRoles<TCollection>(
+    public static IResourceBuilder<AzureEntraIdAppRegistrationResource> WithRoleCatalog<TCollection>(
         this IResourceBuilder<AzureEntraIdAppRegistrationResource> builder,
         AllowedMemberTypes allowedMemberTypes = AllowedMemberTypes.User)
         where TCollection : IRoleCollection, new() {
